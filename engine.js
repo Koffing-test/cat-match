@@ -1,27 +1,28 @@
 export const SIZE = 7;
-export const SYMBOLS = ['🐟','🧶','🌼','🫐','🍃','🎀','🐭'];
-export const NAMES = ['рыбка','клубок','цветок','ягоды','листик','бантик','мышка'];
+export const ITEMS = ['kibble','foil','cable','berries','spring','bow','mouse'];
+export const BOW_COST = 10;
+export const NAMES = ['Съедобные камушки','шарик из фольги','кабель зарядки','ягоды','резинка-пружинка','бантик','мышка'];
 export const STORIES = [
  {title:'Солнечный подоконник',text:'Лайм нашла тёплое пятнышко. До важных дел можно немного помурчать.',reward:'Маленькое солнце',caption:'Весь мир подождёт. У нас тихий час.',cat:'ginger'},
- {title:'Охота на клубок',text:'Лайм уже заметила клубок. Текила, старшая кошка, пока наблюдает с королевским спокойствием.',reward:'Нить приключения',caption:'У этого клубка не было ни единого шанса.',cat:'gray'},
+ {title:'Охота за фольгой',text:'Лайм уже заметила блестящий шарик из фольги. Текила, старшая кошка, пока наблюдает с королевским спокойствием.',reward:'Нить приключения',caption:'У этого шарика не было ни единого шанса.',cat:'gray'},
  {title:'Захват дивана',text:'Королева квартиры Текила заняла диван. Лайм зовёт на вечерние приключения — вдвоём веселее.',reward:'Дом там, где вы',caption:'Самое любимое место — рядом с тобой.',cat:'both'}
 ];
 export const LEVELS = Array.from({length:15},(_,i)=>{
- const chapter=Math.floor(i/5), task=['fish','yarn','mouse','fish','yarn'][i%5];
- const titles=['Завтрак готов','Клубок убежал','Тихая охота','Ещё кусочек','Мягкие лапки','Рыбный день','Нитки повсюду','Под диваном','Большой аппетит','Тёплый плед','Пир на весь дом','Хитрый узелок','Ночная погоня','Ужин вдвоём','Наш уютный дом'];
- return {id:i+1,chapter,title:titles[i],task,target:task==='fish'?18+chapter*6+(i%5)*2:task==='yarn'?10+chapter*4:2+Math.floor(chapter/2),moves:task==='mouse'?36+chapter*8:task==='yarn'?30+chapter*3:24+chapter*2};
+ const chapter=Math.floor(i/5), task=['food','cords','mouse','food','cords'][i%5];
+ const titles=['Завтрак готов','Шарик убежал','Тихая охота','Ещё кусочек','Мягкие лапки','Хрустящий день','Провода повсюду','Под диваном','Большой аппетит','Тёплый плед','Пир на весь дом','Хитрый провод','Ночная погоня','Ужин вдвоём','Наш уютный дом'];
+ return {id:i+1,chapter,title:titles[i],task,target:task==='food'?18+chapter*6+(i%5)*2:task==='cords'?10+chapter*4:2+Math.floor(chapter/2),moves:task==='mouse'?36+chapter*8:task==='cords'?30+chapter*3:24+chapter*2};
 });
 export class Game {
- constructor(level=LEVELS[0],rng=Math.random){this.level=level;this.rng=rng;this.serial=0;this.moves=level.moves;this.progress=0;this.score=0;this.skillsUsed=new Set();this.turnsTaken=0;this.yarn=new Set();this.mouseCount=0;this.frames=[];this.makeBoard();}
+ constructor(level=LEVELS[0],rng=Math.random){this.level=level;this.rng=rng;this.serial=0;this.moves=level.moves;this.progress=0;this.score=0;this.skillsUsed=new Set();this.turnsTaken=0;this.bowCharge=0;this.cords=new Set();this.mouseCount=0;this.frames=[];this.makeBoard();}
  cell(type){return {id:++this.serial,type:type??Math.floor(this.rng()*6),special:null};}
  makeBoard(){
   this.board=Array.from({length:49},()=>this.cell());
   for(let i=0;i<49;i++){let guard=0;while(((i%7>=2&&this.board[i].type===this.board[i-1].type&&this.board[i].type===this.board[i-2].type)||(i>=14&&this.board[i].type===this.board[i-7].type&&this.board[i].type===this.board[i-14].type))&&guard++<30)this.board[i].type=(this.board[i].type+1)%6;}
-  if(this.level.task==='yarn'){const positions=Array.from({length:49},(_,i)=>i);for(let n=0;n<this.level.target;n++){let j=Math.floor(this.rng()*positions.length);this.yarn.add(positions.splice(j,1)[0]);}}
+  if(this.level.task==='cords'){const positions=Array.from({length:49},(_,i)=>i);for(let n=0;n<this.level.target;n++){let j=Math.floor(this.rng()*positions.length);this.cords.add(positions.splice(j,1)[0]);}}
   if(this.level.task==='mouse')this.spawnMouse();
   this.ensureMoves();
  }
- snapshot(pop=[],note=''){return {board:this.board.map(c=>c?{...c}:null),yarn:[...this.yarn],moves:this.moves,progress:this.progress,score:this.score,skillsUsed:[...this.skillsUsed],turnsTaken:this.turnsTaken,pop:[...pop],note};}
+ snapshot(pop=[],note=''){return {board:this.board.map(c=>c?{...c}:null),cords:[...this.cords],moves:this.moves,progress:this.progress,score:this.score,skillsUsed:[...this.skillsUsed],turnsTaken:this.turnsTaken,bowCharge:this.bowCharge,pop:[...pop],note};}
  frame(pop=[],note=''){this.frames.push(this.snapshot(pop,note));}
  groups(){const found=[];for(let row=0;row<7;row++)for(let col=0;col<7;col++)for(const step of [1,7]){
   const i=row*7+col,c=this.board[i];if(!c||c.type===6)continue;
@@ -58,8 +59,8 @@ export class Game {
    for(const q of extra)if(!hit.has(q)){hit.add(q);queue.push(q);}
   }
   const removed=[...hit].filter(p=>this.board[p]?.type!==6&&!creation.has(p));
-  for(const p of hit){if(this.yarn.delete(p)&&this.level.task==='yarn')this.progress++;}
-  for(const p of removed){if(this.level.task==='fish'&&this.board[p]?.type===0)this.progress++;this.score+=50;}
+  for(const p of hit){if(this.cords.delete(p)&&this.level.task==='cords')this.progress++;}
+  for(const p of removed){if(this.level.task==='food'&&this.board[p]?.type===0)this.progress++;if(this.board[p]?.type===5&&!this.skillsUsed.has('scratch'))this.bowCharge=Math.min(BOW_COST,this.bowCharge+1);this.score+=50;}
   this.frame(removed,removed.length>7?'Мур-комбо!':'');
   for(const p of removed)this.board[p]=null;
   for(const [p,special]of creation){if(this.board[p])this.board[p].special=special;}
@@ -79,9 +80,10 @@ export class Game {
  }
  skill(kind,center=24){
   this.frames=[];
-  if(this.finished||!['purr','queen','zoomies'].includes(kind)||this.skillsUsed.has(kind))return [];
+  if(this.finished||!['purr','queen','zoomies','scratch'].includes(kind)||this.skillsUsed.has(kind))return [];
   if(kind==='zoomies'&&this.turnsTaken<6)return [];
-  if(kind==='queen'&&(!Number.isInteger(center)||center<0||center>=49))return [];
+  if(kind==='scratch'&&this.bowCharge<BOW_COST)return [];
+  if(['queen','scratch'].includes(kind)&&(!Number.isInteger(center)||center<0||center>=49))return [];
   this.skillsUsed.add(kind);
   if(kind==='purr'){
    this.moves+=3;this.frame([],'Лайм мурчит. Ещё три хода для тебя ♡');return this.frames;
@@ -89,12 +91,15 @@ export class Game {
   const hit=[];
   if(kind==='queen'){
    for(let i=0;i<49;i++)if(Math.floor(i/7)===Math.floor(center/7)||i%7===center%7)hit.push(i);
+  }else if(kind==='scratch'){
+   this.bowCharge-=BOW_COST;const left=Math.min(4,Math.max(0,center%7-1));
+   for(let row=0;row<7;row++)for(let col=left;col<left+3;col++)hit.push(row*7+col);
   }else{
    const candidates=this.board.map((c,i)=>c.type!==6?i:-1).filter(i=>i>=0);
    for(let n=0;n<12&&candidates.length;n++)hit.push(candidates.splice(Math.floor(this.rng()*candidates.length),1)[0]);
   }
   this.blast(hit);this.resolve();if(!this.finished)this.ensureMoves();
-  this.frame([],kind==='queen'?'Текила навела порядок. Так решила королева.':'Лайм и Текила: вечерние бесоебства начались!');return this.frames;
+  this.frame([],kind==='scratch'?'Коготки наточены. Три столбца стали свободнее!':kind==='queen'?'Текила навела порядок. Так решила королева.':'Лайм и Текила: вечерние бесоебства начались!');return this.frames;
  }
  get won(){return this.progress>=this.level.target;}
  get finished(){return this.won||this.moves<=0;}

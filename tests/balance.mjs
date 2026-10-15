@@ -6,8 +6,8 @@ for(const level of LEVELS){let wins=0;const seeds=100;for(let seed=1;seed<=seeds
  const g=new Game(level,random(seed));
  while(!g.finished){const candidates=[];for(let a=0;a<49;a++)for(const d of [1,7])if(g.canSwap(a,a+d))candidates.push([a,a+d]);
  let best,bestValue=-Infinity;
- for(const [a,b]of candidates){const copy=Object.assign(Object.create(Game.prototype),g,{board:g.board.map(c=>({...c})),yarn:new Set(g.yarn),skillsUsed:new Set(g.skillsUsed),frames:[],rng:random(seed*999+g.moves)});copy.move(a,b);const v=(copy.progress-g.progress)*100+(copy.score-g.score)/50+(level.task==='mouse'?copy.board.reduce((v,c,i)=>v+(c.type===6?Math.floor(i/7)*10:0),0):0);if(v>bestValue){bestValue=v;best=[a,b];}}
- if(g.moves<=5&&!g.finished){const mouse=g.board.findIndex(c=>c.type===6);g.skill('purr');if(!g.finished)g.skill('queen',level.task==='mouse'?Math.min(48,mouse+7):24);if(!g.finished)g.skill('zoomies');}
+ for(const [a,b]of candidates){const copy=Object.assign(Object.create(Game.prototype),g,{board:g.board.map(c=>({...c})),cords:new Set(g.cords),skillsUsed:new Set(g.skillsUsed),frames:[],rng:random(seed*999+g.moves)});copy.move(a,b);const v=(copy.progress-g.progress)*100+(copy.score-g.score)/50+(level.task==='mouse'?copy.board.reduce((v,c,i)=>v+(c.type===6?Math.floor(i/7)*10:0),0):0);if(v>bestValue){bestValue=v;best=[a,b];}}
+ if(g.moves<=5&&!g.finished){const mouse=g.board.findIndex(c=>c.type===6);g.skill('purr');if(!g.finished)g.skill('queen',level.task==='mouse'?Math.min(48,mouse+7):24);if(!g.finished)g.skill('zoomies');if(!g.finished)g.skill('scratch',level.task==='mouse'?Math.min(48,mouse+7):24);}
  if(!g.finished)g.move(...best);
  }
  if(g.won)wins++;

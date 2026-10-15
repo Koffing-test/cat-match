@@ -1,5 +1,5 @@
-const CACHE='mur-mur-v3-built-in-gallery';
-const FILES=['./','./index.html','./style.css','./app.js','./engine.js','./art.js','./photos.js','./gallery.js','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png','./assets/fonts/manrope-500.ttf','./assets/fonts/manrope-700.ttf','./assets/fonts/manrope-600.ttf','./assets/fonts/manrope-400.ttf','./assets/fonts/comfortaa-600.ttf','./assets/fonts/manrope-800.ttf','./assets/fonts/comfortaa-700.ttf','./assets/fonts/comfortaa-500.ttf'];
+const CACHE='mur-mur-v4-toys-sofa';
+const FILES=['./','./index.html','./style.css','./app.js','./engine.js','./art.js','./assets/items.svg','./assets/sofa-cozy.png','./photos.js','./gallery.js','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png','./assets/fonts/manrope-500.ttf','./assets/fonts/manrope-700.ttf','./assets/fonts/manrope-600.ttf','./assets/fonts/manrope-400.ttf','./assets/fonts/comfortaa-600.ttf','./assets/fonts/manrope-800.ttf','./assets/fonts/comfortaa-700.ttf','./assets/fonts/comfortaa-500.ttf'];
 FILES.push(...Array.from({length:37},(_,i)=>{const base='./assets/gallery/photo-'+String(i+1).padStart(3,'0');return [base+'.jpg',base+'-thumb.jpg'];}).flat());
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES.map(url=>new Request(url,{cache:'reload'}))))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('mur-mur-')&&k!==CACHE).map(k=>caches.delete(k))))));
