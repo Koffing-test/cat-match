@@ -14,6 +14,35 @@ export const LEVELS = Array.from({length:15},(_,i)=>{
 });
 export class Game {
  constructor(level=LEVELS[0],rng=Math.random){this.level=level;this.rng=rng;this.serial=0;this.moves=level.moves;this.progress=0;this.score=0;this.skillsUsed=new Set();this.turnsTaken=0;this.bowCharge=0;this.cords=new Set();this.mouseCount=0;this.frames=[];this.makeBoard();}
+ toSave(){
+  return {version:1,level:{id:this.level.id,target:this.level.target,moves:this.level.moves},
+   ...this.snapshot(),serial:this.serial,mouseCount:this.mouseCount};
+ }
+ static restore(data,rng=Math.random){
+  // Only accept a complete, settled board. Do not run the random constructor on resume.
+  try{
+   const integer=(v,max=1000000)=>Number.isSafeInteger(v)&&v>=0&&v<=max;
+   if(!data||data.version!==1||!integer(data.level?.id,15)||data.level.id<1)return null;
+   const level=LEVELS[data.level.id-1];
+   if(!integer(data.level.target,level.task==='cords'?49:100)||data.level.target<1||!integer(data.level.moves,1000)||data.level.moves<1)return null;
+   if(!['moves','progress','score','turnsTaken','serial','mouseCount','bowCharge'].every(k=>integer(data[k],k==='score'?1000000000:1000000))||data.bowCharge>BOW_COST)return null;
+   if(!Array.isArray(data.board)||data.board.length!==49||!data.board.every(c=>c&&integer(c.id,1000000000)&&c.id>0&&integer(c.type,6)&&[null,'row','col','bomb','rainbow'].includes(c.special)&&(c.type!==6||c.special===null)))return null;
+   if(new Set(data.board.map(c=>c.id)).size!==49||data.serial<Math.max(...data.board.map(c=>c.id)))return null;
+   if(!Array.isArray(data.cords)||!data.cords.every(p=>integer(p,48))||new Set(data.cords).size!==data.cords.length)return null;
+   if(!Array.isArray(data.skillsUsed)||new Set(data.skillsUsed).size!==data.skillsUsed.length||!data.skillsUsed.every(k=>['purr','queen','zoomies','scratch'].includes(k)))return null;
+   const mice=data.board.filter(c=>c.type===6).length;
+   if(level.task==='cords'?(data.cords.length+data.progress!==data.level.target):data.cords.length!==0)return null;
+   if(level.task==='mouse'){
+    if(mice>1||data.mouseCount>data.level.target||data.mouseCount!==data.progress+mice)return null;
+    if(data.progress<data.level.target&&mice!==1)return null;
+   }else if(mice||data.mouseCount)return null;
+   const game=Object.assign(Object.create(Game.prototype),{level:{...level,target:data.level.target,moves:data.level.moves},rng,
+    board:data.board.map(c=>({id:c.id,type:c.type,special:c.special})),cords:new Set(data.cords),skillsUsed:new Set(data.skillsUsed),frames:[]});
+   for(const key of ['moves','progress','score','turnsTaken','serial','mouseCount','bowCharge'])game[key]=data[key];
+   if(game.groups().length||(!game.finished&&!game.possible()))return null;
+   return game;
+  }catch{return null;}
+ }
  cell(type){return {id:++this.serial,type:type??Math.floor(this.rng()*6),special:null};}
  makeBoard(){
   this.board=Array.from({length:49},()=>this.cell());
