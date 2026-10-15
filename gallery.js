@@ -76,9 +76,9 @@ export const GALLERY = [
     "id": "photo-009",
     "src": "./assets/gallery/photo-009.jpg",
     "thumb": "./assets/gallery/photo-009-thumb.jpg",
-    "catLabel": "Текила",
+    "catLabel": "Лайм",
     "title": "Королевское одобрение",
-    "caption": "Текила принимает ласку. Кажется, всё сделано правильно.",
+    "caption": "Лайм принимает ласку. Кажется, всё сделано правильно.",
     "level": 4
   },
   {
