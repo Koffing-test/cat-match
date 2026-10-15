@@ -70,3 +70,7 @@
 @media(prefers-reduced-motion:reduce){.scratch-scene{animation:none!important}.claw-lines path{animation:none!important;stroke-dashoffset:0}}
 
 .skill-card.scratch:disabled,.skill-card.joint:disabled{opacity:.8}
+
+/* Readable pacing, also when iOS Reduce Motion disables movement. */
+.tile{transition:transform .52s cubic-bezier(.2,.7,.4,1),opacity .36s}.tile-inner{transition:scale .3s,filter .3s}.tile.matching .tile-inner{outline:3px solid #fff5c9;box-shadow:0 0 0 2px #ba7d9c,0 0 15px #fff3c4aa;scale:1.06}.tile.pop .tile-inner{scale:1.3}.board-frame.purring{animation-duration:.8s;animation-iteration-count:3}.board-frame.royal{animation-duration:2.2s}.board-frame.zooming{animation-duration:1.1s;animation-iteration-count:2}.scratch-scene{animation-duration:3.4s}.claw-lines path{animation-duration:1.1s;animation-delay:.7s}.claw-lines path:nth-child(2){animation-delay:.95s}.claw-lines path:nth-child(3){animation-delay:1.2s}.goal-text{min-width:0}.goal-text b{line-height:1.7}.goal-text b #progress{white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.tile,.tile-inner{transition:none!important}.tile.matching .tile-inner{scale:1}.tile.pop .tile-inner{scale:1}.scratch-scene{animation:none!important}.claw-lines path{animation:none!important;stroke-dashoffset:0}}

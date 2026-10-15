@@ -13,7 +13,9 @@ let save={completed:{},sound:false};
 try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');if(raw&&typeof raw==='object'){save.completed=raw.completed&&typeof raw.completed==='object'?raw.completed:{};save.sound=raw.sound===true;}}catch{storageOK=false;}
 let page='home',game=null,busy=false,selected=null,armed=false,epoch=0,toastTimer,audio;
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const pause=ms=>new Promise(r=>setTimeout(r,reduced?5:ms));
+const PACE={move:560,match:360,clear:380,settle:120};
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+let lastVisual=null;
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch{storageOK=false;toast('Сохранение недоступно. Не закрывай игру, чтобы сохранить прогресс.');}}
 function unlocked(){let i=1;while(i<=15&&save.completed[i])i++;return Math.min(i,15);}
 function completed(){return LEVELS.filter(l=>save.completed[l.id]).length;}
@@ -24,7 +26,7 @@ function nav(p){epoch++;busy=false;armed=false;selected=null;page=p;game=null;do
 function home(){main.innerHTML=`<section class="hero"><div class="hero-copy"><div class="eyebrow">Для тебя. С мурчанием.</div><h1>Маленькие игры.<br><em>Большая любовь.</em></h1><p class="intro">Собирай любимые мелочи, помогай Лайм и Текиле и сохраняй тёплые моменты.</p><button class="primary" id="continue">${completed()?'Продолжить приключение':'Начать приключение'} <span>→</span></button><p class="tiny-note">Никуда не спешим. Просто играем вместе.</p></div><div class="scene">${scene()}<div class="scene-badge">Режим: <b>уют включён</b> ♡</div></div></section><section><div class="section-heading"><h2>Три главы одного дома</h2><span>${completed()} из 15 уровней</span></div><div class="chapters">${STORIES.map((s,i)=>{const n=LEVELS.filter(l=>l.chapter===i&&save.completed[l.id]).length,open=unlocked()>=i*5+1;return `<button class="chapter" data-chapter="${i}" ${open?'':'disabled'}><div class="chapter-art"><span class="chapter-label">${open?'ГЛАВА 0'+(i+1):'ЗАКРЫТО · ГЛАВА 0'+(i+1)}</span>${cat(i===1?'tequila':'lime')}</div><div class="chapter-info"><h3>${s.title}</h3><p>${open?n+' / 5 тёплых историй':'После '+i*5+'-го уровня'}</p><div class="chapter-progress"><i style="width:${n*20}%"></i></div></div></button>`;}).join('')}</div></section><p class="quote"><span>♡</span> Счастье — это когда дома кто-то мурчит.</p>${storageOK?'':'<p class="storage-warning">Браузер не разрешил сохранять прогресс. В этой сессии можно играть.</p>'}`;
  $('#continue').onclick=()=>start(unlocked());document.querySelectorAll('[data-chapter]').forEach(b=>b.onclick=()=>chapter(Number(b.dataset.chapter)));}
 function chapter(c){page='chapter';const s=STORIES[c];main.innerHTML=`<div class="page-header"><button class="back" id="back">← Все приключения</button><div class="eyebrow">Глава 0${c+1} · пять маленьких историй</div><h1>${s.title}</h1><p>${s.text}</p></div><div class="scene" style="max-width:260px;margin:auto;justify-self:center">${scene(c)}</div><div class="levels">${LEVELS.filter(l=>l.chapter===c).map(l=>`<button class="level ${l.id===unlocked()?'current':''}" data-level="${l.id}" ${l.id>unlocked()?'disabled':''}><strong>${l.id>unlocked()?'♧':l.id}</strong><small>${save.completed[l.id]?'★'.repeat(save.completed[l.id].stars||1):l.id<=unlocked()?'Играть':'Закрыто'}</small></button>`).join('')}</div><p class="chapter-story">Пройди все пять уровней, чтобы открыть<br>все воспоминания этой главы.</p>`;$('#back').onclick=()=>nav('home');document.querySelectorAll('[data-level]').forEach(b=>b.onclick=()=>start(+b.dataset.level));window.scrollTo(0,0);}
-function goalText(l){return l.task==='food'?[tileIcon(0),'Собери корм','Съедобные камушки для Лайм и Текилы']:l.task==='cords'?[tileIcon(2),'Распутай провода','Собирай фишки под белыми проводами']:[tileIcon(6),'Поймай мышек','Убирай фишки под мышкой — она спустится вниз'];}
+function goalText(l){return l.task==='food'?[tileIcon(0),'Съедобные камушки','Собери корм для Лайм и Текилы']:l.task==='cords'?[tileIcon(2),'Распутай провода','Собирай фишки под белыми проводами']:[tileIcon(6),'Поймай мышек','Убирай фишки под мышкой — она спустится вниз'];}
 function start(id){epoch++;game=new Game(LEVELS[id-1]);page='game';busy=false;selected=null;armed=false;const l=game.level,[icon,title,sub]=goalText(l);main.innerHTML=`<section class="game-wrap"><div class="game-top"><button class="back" id="exit">← К главе</button><h2>${l.title}</h2><span>Уровень ${id} / 15</span></div><div class="goal-card"><div class="goal-emoji">${icon}</div><div class="goal-text"><b>${title} <span id="progress"></span></b><small>${sub}</small><div class="goal-bar"><i id="goal-fill"></i></div></div><div class="move-counter"><strong id="moves"></strong><small>ходов</small></div></div><div class="board-frame"><div id="board" class="board" role="group" aria-label="Игровое поле 7 на 7"></div></div><div id="game-status" class="game-status" role="status" aria-live="polite">${id===1?'Поменяй соседние фишки, чтобы собрать три в ряд':'Пусть всё сложится ♡'}</div><div class="skills-grid">${['purr','queen','zoomies','scratch'].map(kind=>`<button class="skill-card ${kind==='zoomies'?'joint':kind==='scratch'?'scratch':''}" data-skill="${kind}"><span class="skill-portrait">${kind==='scratch'?'<img class="skill-sofa" src="./assets/sofa-cozy.png" alt="">':kind==='zoomies'?'<span aria-hidden="true">☾</span>':cat(kind==='queen'?'tequila':'lime')}</span><span class="skill-copy"><small class="skill-cat">${SKILLS[kind].cat}</small><b>${SKILLS[kind].name}</b><small class="skill-note">${SKILLS[kind].note}</small>${kind==='scratch'?'<span class="bow-gauge" role="progressbar" aria-label="Бантики для коготков" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"><i></i></span>':''}</span></button>`).join('')}</div><div class="game-tools"><span class="game-tools-note">Каждая поможет один раз ♡</span><button class="hint-button" id="hint">✧ Подсказка</button><button class="hint-button" id="restart" aria-label="Начать уровень заново">↻</button></div><p class="game-tip">${l.task==='mouse'?'Мышку нельзя менять местами. Освобождай путь под ней.':'4 в ряд — полосатая фишка. 5 в ряд — радужная.'}</p></section>`;
  $('#exit').onclick=()=>{if(busy)return;openDialog(`<h2>Небольшая пауза?</h2><p>Прогресс этого уровня начнётся заново. Уже пройденные уровни сохранятся.</p><button class="primary" id="leave">К главе</button><button class="text-button" id="stay">Продолжить играть</button>`);$('#leave').onclick=()=>{closeDialog();epoch++;game=null;chapter(l.chapter);};$('#stay').onclick=closeDialog;};
  $('#restart').onclick=()=>{if(busy)return;openDialog(`<h2>Попробуем сначала?</h2><p>Поле обновится, а кошка-помощник снова будет готова помочь.</p><button class="primary" id="retry">Начать заново</button><button class="text-button" id="stay">Оставить как есть</button>`);$('#retry').onclick=()=>{closeDialog();start(id);};$('#stay').onclick=closeDialog;};
@@ -36,7 +38,7 @@ function start(id){epoch++;game=new Game(LEVELS[id-1]);page='game';busy=false;se
  render(game.snapshot());window.scrollTo(0,0);}
 function markSelection(){document.querySelectorAll('.tile').forEach(t=>t.classList.toggle('selected',+t.dataset.pos===selected));}
 function invalid(p){const el=document.querySelector(`[data-pos="${p}"]`);el?.classList.remove('invalid');requestAnimationFrame(()=>el?.classList.add('invalid'));$('#game-status').textContent='Нужна комбинация из трёх. Ход не потрачен.';}
-function select(p){if(busy||!game||game.finished)return;if(armed){const kind=armed;armed=false;selected=null;const frames=game.skill(kind,p);if(frames.length){skillEffect(kind);animate(frames);}else updateSkills(game.snapshot());return;}if(selected===null){selected=p;markSelection();return;}if(p===selected){selected=null;markSelection();return;}if(game.adjacent(selected,p)){act(selected,p);}else{selected=p;markSelection();}}
+function select(p){if(busy||!game||game.finished)return;if(armed){const kind=armed;armed=false;selected=null;const frames=game.skill(kind,p);if(frames.length){skillEffect(kind);animate(frames,kind);}else updateSkills(game.snapshot());return;}if(selected===null){selected=p;markSelection();return;}if(p===selected){selected=null;markSelection();return;}if(game.adjacent(selected,p)){act(selected,p);}else{selected=p;markSelection();}}
 function updateSkills(state){
  for(const button of document.querySelectorAll('[data-skill]')){
   const kind=button.dataset.skill,used=state.skillsUsed.includes(kind);
@@ -55,7 +57,7 @@ function activateSkill(kind){
   armed=armed===kind?false:kind;updateSkills(game.snapshot());$('#board').classList.toggle('scratch-target',armed==='scratch');
   $('#game-status').textContent=armed?(kind==='scratch'?'Выбери клетку: коготки очистят три соседних столбца.':'Текила ждёт указаний: выбери клетку для креста.'):'Кошки пока наблюдают за порядком.';return;
  }
- armed=false;$('#board').classList.remove('scratch-target');const frames=game.skill(kind);if(frames.length){skillEffect(kind);animate(frames);}
+ armed=false;$('#board').classList.remove('scratch-target');const frames=game.skill(kind);if(frames.length){skillEffect(kind);animate(frames,kind);}
 }
 function skillEffect(kind){
  const frame=$('.board-frame');frame.classList.remove('purring','royal','zooming','scratching');$('#board').classList.remove('scratch-target');
@@ -64,15 +66,35 @@ function skillEffect(kind){
  if(kind==='purr'&&save.sound)purrSound();
  if(kind==='scratch'){
   const effect=document.createElement('div');effect.className='scratch-scene';effect.setAttribute('aria-hidden','true');
-  effect.innerHTML='<img src="./assets/sofa-cozy.png" alt=""><svg viewBox="0 0 300 160"><g class="claw-lines" fill="none" stroke-linecap="round"><path d="M124 47q-15 30-20 61"/><path d="M153 40q-16 32-22 66"/><path d="M181 44q-14 32-19 64"/></g></svg><span>Ш-ш-ш… Коготки в деле!</span>';frame.append(effect);setTimeout(()=>effect.remove(),reduced?300:1400);
+  effect.innerHTML='<img src="./assets/sofa-cozy.png" alt=""><svg viewBox="0 0 300 160"><g class="claw-lines" fill="none" stroke-linecap="round"><path d="M124 47q-15 30-20 61"/><path d="M153 40q-16 32-22 66"/><path d="M181 44q-14 32-19 64"/></g></svg><span>Ш-ш-ш… Коготки в деле!</span>';frame.append(effect);setTimeout(()=>effect.remove(),reduced?1800:3400);
  }
 }
 function purrSound(){try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const t=audio.currentTime,o=audio.createOscillator(),lfo=audio.createOscillator(),gain=audio.createGain(),depth=audio.createGain();o.type='triangle';o.frequency.value=90;lfo.frequency.value=26;depth.gain.value=.018;gain.gain.setValueAtTime(.025,t);gain.gain.exponentialRampToValueAtTime(.001,t+1.5);lfo.connect(depth);depth.connect(gain.gain);o.connect(gain);gain.connect(audio.destination);o.start(t);lfo.start(t);o.stop(t+1.5);lfo.stop(t+1.5);}catch{}}
 function act(a,b){if(busy||!game)return;selected=null;markSelection();const result=game.move(a,b);if(!result.valid){invalid(a);return;}animate(result.frames);}
-function render(s){const board=$('#board');if(!board)return;const ids=new Set(s.board.filter(Boolean).map(c=>String(c.id)));for(const el of [...board.children])if(!ids.has(el.dataset.id))el.remove();
+function render(s){const board=$('#board');if(!board)return;lastVisual=s;const ids=new Set(s.board.filter(Boolean).map(c=>String(c.id)));for(const el of [...board.children])if(!ids.has(el.dataset.id))el.remove();
  s.board.forEach((c,p)=>{if(!c)return;let el=board.querySelector(`[data-id="${c.id}"]`);if(!el){el=document.createElement('button');el.dataset.id=c.id;el.className='tile';board.append(el);}const special=c.special==='row'?'↔':c.special==='col'?'↕':c.special==='bomb'?'✹':c.special==='rainbow'?'✦':'';el.className=`tile ${s.cords.includes(p)?'tangled ':''}${c.special==='rainbow'?'rainbow ':''}${s.pop.includes(p)?'pop ':''}`;el.dataset.pos=p;el.style.transform=`translate(${p%7*100}%,${Math.floor(p/7)*100}%)`;el.setAttribute('aria-label',`${NAMES[c.type]}, ряд ${Math.floor(p/7)+1}, столбец ${p%7+1}${c.special?', усилитель '+special:''}${s.cords.includes(p)?', под проводами':''}`);const html=`<span class="tile-inner t${c.type}"><span class="symbol">${c.special==='rainbow'?'✦':tileIcon(c.type)}</span>${special?`<span class="special">${special}</span>`:''}</span>`;if(el.innerHTML!==html)el.innerHTML=html;el.tabIndex=busy?-1:0;});
  $('#progress').textContent=`${Math.min(s.progress,game.level.target)} / ${game.level.target}`;$('#moves').textContent=s.moves;$('.move-counter').classList.toggle('danger',s.moves<=5);$('#goal-fill').style.width=`${Math.min(100,s.progress/game.level.target*100)}%`;if(s.note)$('#game-status').textContent=s.note;updateSkills(s);}
-async function animate(frames){busy=true;const ticket=epoch;$('#hint').disabled=true;for(const frame of frames){if(ticket!==epoch)return;render(frame);if(frame.pop.length)tone();await pause(frame.pop.length?170:150);}if(ticket!==epoch)return;busy=false;render(game.snapshot());$('#hint').disabled=false;if(game.finished)finish();else $('#game-status').textContent='Хорошо идём. Кошки верят в тебя ♡';}
+async function animate(frames,skill=null){
+ busy=true;const ticket=epoch,started=performance.now();$('#hint').disabled=true;
+ if(skill)await pause(skill==='scratch'?(reduced?450:900):350);
+ for(const frame of frames){
+  if(ticket!==epoch)return;
+  if(frame.pop.length){
+   // Keep the matched objects visible before fading them, including Reduce Motion.
+   render({...frame,pop:[]});for(const p of frame.pop)document.querySelector(`[data-pos="${p}"]`)?.classList.add('matching');
+   await pause(PACE.match);if(ticket!==epoch)return;
+   render(frame);tone();await pause(PACE.clear);
+  }else{
+   const previous=new Map((lastVisual?.board||[]).map((cell,i)=>[cell?.id,i]));
+   const moved=frame.board.some((cell,i)=>cell&&previous.get(cell.id)!==i);
+   render(frame);await pause(moved?PACE.move:PACE.settle);
+  }
+ }
+ const minimum=skill==='scratch'?(reduced?1900:3500):skill?(reduced?1500:2200):0;
+ if(minimum)await pause(Math.max(0,minimum-(performance.now()-started)));
+ if(ticket!==epoch)return;busy=false;render(game.snapshot());$('#hint').disabled=false;
+ if(game.finished)finish();else $('#game-status').textContent='Хорошо идём. Кошки верят в тебя ♡';
+}
 function openDialog(html){$('#modal-content').innerHTML=html;if(!modal.open)modal.showModal();}
 function closeDialog(){modal.close();}
 function confetti(){if(reduced)return;for(let i=0;i<32;i++){const el=document.createElement('i');el.className='confetti';el.style.cssText=`left:${Math.random()*100}%;background:${['#bd7486','#d6b36b','#8eaa87','#b2b4d2'][i%4]};--drift:${Math.random()*180-90}px;animation-delay:${Math.random()*.6}s`;document.body.append(el);setTimeout(()=>el.remove(),3400);}}
