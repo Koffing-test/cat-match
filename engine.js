@@ -10,7 +10,7 @@ export const STORIES = [
 export const LEVELS = Array.from({length:15},(_,i)=>{
  const chapter=Math.floor(i/5), task=['food','cords','mouse','food','cords'][i%5];
  const titles=['Завтрак готов','Шарик убежал','Тихая охота','Ещё кусочек','Мягкие лапки','Хрустящий день','Провода повсюду','Под диваном','Большой аппетит','Тёплый плед','Пир на весь дом','Хитрый провод','Ночная погоня','Ужин вдвоём','Наш уютный дом'];
- return {id:i+1,chapter,title:titles[i],task,target:task==='food'?18+chapter*6+(i%5)*2:task==='cords'?10+chapter*4:2+Math.floor(chapter/2),moves:task==='mouse'?36+chapter*8:task==='cords'?30+chapter*3:24+chapter*2};
+ return {id:i+1,chapter,title:titles[i],task,target:task==='food'?18+chapter*6+(i%5)*2:task==='cords'?10+chapter*4:2+Math.floor(chapter/2),moves:task==='mouse'?26+chapter*3:task==='cords'?22+chapter: (i===0?22:20+chapter)};
 });
 export class Game {
  constructor(level=LEVELS[0],rng=Math.random){this.level=level;this.rng=rng;this.serial=0;this.moves=level.moves;this.progress=0;this.score=0;this.skillsUsed=new Set();this.turnsTaken=0;this.bowCharge=0;this.cords=new Set();this.mouseCount=0;this.frames=[];this.makeBoard();}
@@ -86,7 +86,9 @@ export class Game {
   if(['queen','scratch'].includes(kind)&&(!Number.isInteger(center)||center<0||center>=49))return [];
   this.skillsUsed.add(kind);
   if(kind==='purr'){
-   this.moves+=3;this.frame([],'Лайм мурчит. Ещё три хода для тебя ♡');return this.frames;
+   const candidates=this.board.map((c,i)=>c.type!==4&&c.type!==6&&!c.special?i:-1).filter(i=>i>=0);
+   for(let n=0;n<6&&candidates.length;n++){const p=candidates.splice(Math.floor(this.rng()*candidates.length),1)[0];this.board[p].type=4;}
+   this.frame([],'Лайм намурчала резинки-пружинки ♡');this.resolve();if(!this.finished)this.ensureMoves();this.frame();return this.frames;
   }
   const hit=[];
   if(kind==='queen'){
@@ -100,6 +102,18 @@ export class Game {
   }
   this.blast(hit);this.resolve();if(!this.finished)this.ensureMoves();
   this.frame([],kind==='scratch'?'Коготки наточены. Три столбца стали свободнее!':kind==='queen'?'Текила навела порядок. Так решила королева.':'Лайм и Текила: вечерние бесоебства начались!');return this.frames;
+ }
+ // This is a gentle heuristic, not a prediction of random cascades.
+ get needsHusbandHelp(){
+  if(this.finished||this.moves>2)return false;
+  const remaining=this.level.target-this.progress;
+  if(this.level.task!=='mouse')return remaining>this.moves*3;
+  const mouse=this.board.findIndex(c=>c?.type===6);
+  return remaining>1||(mouse>=0&&6-Math.floor(mouse/7)>this.moves*2);
+ }
+ husbandHelp(){
+  this.frames=[];if(!this.needsHusbandHelp)return [];
+  this.moves+=5;this.frame([],'Я рядом. Всё получится ♡');return this.frames;
  }
  get won(){return this.progress>=this.level.target;}
  get finished(){return this.won||this.moves<=0;}
