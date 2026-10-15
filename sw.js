@@ -1,0 +1,5 @@
+const CACHE='mur-mur-v1';
+const FILES=['./','./index.html','./style.css','./app.js','./engine.js','./art.js','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png','./assets/fonts/manrope-500.ttf','./assets/fonts/manrope-700.ttf','./assets/fonts/manrope-600.ttf','./assets/fonts/manrope-400.ttf','./assets/fonts/comfortaa-600.ttf','./assets/fonts/manrope-800.ttf','./assets/fonts/comfortaa-700.ttf','./assets/fonts/comfortaa-500.ttf'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES))));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('mur-mur-')&&k!==CACHE).map(k=>caches.delete(k))))));
+self.addEventListener('fetch',event=>{if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;event.respondWith(caches.match(event.request).then(hit=>hit||fetch(event.request)));});
