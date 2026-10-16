@@ -176,14 +176,8 @@ export class Game {
   this.blast(hit);this.resolve(undefined,1);if(!this.finished)this.ensureMoves();
   this.frame([],kind==='scratch'?'Коготки наточены. Три столбца стали свободнее!':kind==='queen'?'Текила навела порядок. Так решила королева.':'Лайм и Текила: вечерние бесоебства начались!');return this.frames;
  }
- // This is a gentle heuristic, not a prediction of random cascades.
- get needsHusbandHelp(){
-  if(this.finished||this.moves>2)return false;
-  const remaining=this.level.target-this.progress;
-  if(this.level.task!=='mouse'){const rate=this.level.task==='score'?600:['specials','cascade'].includes(this.level.task)?1:3;return remaining>this.moves*rate;}
-  const mouse=this.board.findIndex(c=>c?.type===6);
-  return remaining>1||(mouse>=0&&6-Math.floor(mouse/7)>this.moves*2);
- }
+ // Keep rescue predictable, including when only one framed cell remains.
+ get needsHusbandHelp(){return !this.finished&&this.moves>=1&&this.moves<=2;}
  husbandHelp(){
   this.frames=[];if(!this.needsHusbandHelp)return [];
   this.moves+=5;this.frame([],'Я рядом. Всё получится ♡');return this.frames;

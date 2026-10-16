@@ -30,6 +30,6 @@ test('cascades count follow-up matching waves and exclude the initial match',()=
  for(let seed=1;seed<=60;seed++){const g=new Game(level,random(seed));const result=g.move(...g.possible());const waves=result.frames.filter(f=>f.pop.length>0).length;assert.equal(g.progress,Math.max(0,waves-1));if(g.progress>0)withCascade++;}
  assert.ok(withCascade>0);
 });
-test('new goal types keep unlimited husband help and avoid offering it one step from completion',()=>{
- for(const task of ['score','specials','cascade','foil','spring','bow','cable']){const g=blank(task);g.moves=1;assert.ok(g.husbandHelp().length);assert.equal(g.moves,6);g.moves=1;assert.ok(g.husbandHelp().length);g.moves=1;g.progress=g.level.target-1;assert.equal(g.needsHusbandHelp,false);}
+test('new goal types keep unlimited husband help even one step from completion',()=>{
+ for(const task of ['score','specials','cascade','foil','spring','bow','cable']){const g=blank(task);g.moves=1;assert.ok(g.husbandHelp().length);assert.equal(g.moves,6);g.moves=1;assert.ok(g.husbandHelp().length);g.moves=1;g.progress=g.level.target-1;assert.equal(g.needsHusbandHelp,true);}
 });

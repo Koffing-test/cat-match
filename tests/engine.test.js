@@ -59,11 +59,11 @@ test('husband help is repeatable at 1–2 moves with a large remaining goal, and
  const g=blank();const board=JSON.stringify(g.board);g.skillsUsed.add('purr');
  for(const moves of [2,1,2,1,2]){g.moves=moves;assert.ok(g.needsHusbandHelp);assert.ok(g.husbandHelp().length);assert.equal(g.moves,moves+5);assert.equal(g.husbandHelp().length,0);assert.equal(JSON.stringify(g.board),board);assert.deepEqual([...g.skillsUsed],['purr']);assert.equal(g.turnsTaken,0);}
 });
-test('husband help stays hidden early, at victory, at zero moves and when the goal is close',()=>{
+test('husband help stays hidden early and after completion, but is available near the goal',()=>{
  const g=blank();for(const moves of [g.level.moves,3,0]){g.moves=moves;assert.equal(g.needsHusbandHelp,false);assert.equal(g.husbandHelp().length,0);}
- g.moves=1;g.progress=g.level.target-1;assert.equal(g.needsHusbandHelp,false);g.progress=g.level.target;assert.equal(g.needsHusbandHelp,false);
- const cords=blank(LEVELS[1]);cords.moves=2;cords.progress=cords.level.target-7;assert.ok(cords.needsHusbandHelp);cords.progress=cords.level.target-2;assert.equal(cords.needsHusbandHelp,false);
+ g.moves=1;g.progress=g.level.target-1;assert.equal(g.needsHusbandHelp,true);g.progress=g.level.target;assert.equal(g.needsHusbandHelp,false);
+ const cords=blank(LEVELS[1]);cords.moves=2;cords.progress=cords.level.target-7;assert.ok(cords.needsHusbandHelp);cords.progress=cords.level.target-2;assert.equal(cords.needsHusbandHelp,true);
 });
-test('mouse rescue considers remaining mice and distance to the bottom',()=>{
- const g=blank(LEVELS[2]);g.moves=2;g.board[2]=g.cell(6);assert.ok(g.needsHusbandHelp);g.progress=g.level.target-1;assert.ok(g.needsHusbandHelp);g.board[2]=g.cell(0);g.board[37]=g.cell(6);assert.equal(g.needsHusbandHelp,false);
+test('mouse rescue repeats at low moves regardless of distance to the bottom',()=>{
+ const g=blank(LEVELS[2]);g.moves=2;g.board[2]=g.cell(6);assert.ok(g.needsHusbandHelp);g.progress=g.level.target-1;assert.ok(g.needsHusbandHelp);g.board[2]=g.cell(0);g.board[37]=g.cell(6);assert.equal(g.needsHusbandHelp,true);
 });
