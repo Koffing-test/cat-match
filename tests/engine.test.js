@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {Game,LEVELS,BOW_COST} from '../engine.js';
 function seeded(seed){return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 function blank(level=LEVELS[0]){const g=new Game(level,seeded(44));for(let i=0;i<49;i++)g.board[i]=g.cell((i%7+Math.floor(i/7)*2)%6);return g;}
-test('all 15 levels start full, match-free and playable across 100 seeds',()=>{for(const l of LEVELS)for(let s=1;s<=100;s++){const g=new Game(l,seeded(s));assert.equal(g.groups().length,0);assert.ok(g.possible());assert.equal(g.board.length,49);assert.ok(g.board.every(Boolean));if(l.task==='cords')assert.equal(g.cords.size,l.target);}});
+test('all campaign levels start full, match-free and playable',()=>{for(const l of LEVELS)for(let s=1;s<=(l.id<=15?100:3);s++){const g=new Game(l,seeded(s));assert.equal(g.groups().length,0);assert.ok(g.possible());assert.equal(g.board.length,49);assert.ok(g.board.every(Boolean));if(l.task==='cords')assert.equal(g.cords.size,l.target);}});
 test('invalid and wrapped swaps spend no moves',()=>{const g=blank();const before=JSON.stringify(g.board);assert.equal(g.move(6,7).valid,false);assert.equal(g.move(0,48).valid,false);assert.equal(g.moves,g.level.moves);assert.equal(JSON.stringify(g.board),before);});
 test('four creates striped special and five creates rainbow',()=>{for(const count of [4,5]){const g=blank();for(let p=14;p<14+count;p++)g.board[p].type=0;g.resolve(15);assert.ok(g.board.some(c=>c.special===(count===5?'rainbow':'row')));assert.equal(g.groups().length,0);}});
 test('rainbow removes its swapped color, chains resolve, one move spent',()=>{const g=blank();g.board[0].special='rainbow';const result=g.move(0,1);assert.ok(result.valid);assert.equal(g.moves,g.level.moves-1);assert.ok(g.score>=100);assert.equal(g.groups().length,0);assert.equal(new Set(g.board.map(c=>c.id)).size,49);});
 test('Tequila clears a cross and cords, once without spending a move',()=>{const g=blank(LEVELS[1]);g.cords=new Set([21,22,23,1,8]);assert.ok(g.skill('queen',22).length);assert.equal(g.progress,5);assert.equal(g.skill('queen',22).length,0);assert.equal(g.moves,g.level.moves);assert.equal(g.turnsTaken,0);});
 test('mouse survives blasts and is delivered at bottom; new mouse spawns',()=>{const g=blank(LEVELS[2]);g.board[42]=g.cell(6);g.mouseCount=1;g.blast([42,43]);assert.equal(g.progress,1);assert.equal(g.mouseCount,2);assert.equal(g.board.filter(c=>c.type===6).length,1);});
 test('two specials trigger large combination',()=>{const g=blank();g.board[0].special='row';g.board[1].special='bomb';assert.ok(g.move(0,1).valid);assert.ok(g.score>=650);assert.equal(g.groups().length,0);});
-test('complete runs preserve engine invariants across 15 levels and 20 seeds',()=>{for(const l of LEVELS)for(let seed=1;seed<=20;seed++){const g=new Game(l,seeded(seed));let steps=0;while(!g.finished&&steps++<l.moves+1){const p=g.possible();assert.ok(p,`level ${l.id}`);const old=g.moves;assert.ok(g.move(...p).valid);assert.equal(g.moves,old-1);assert.equal(g.groups().length,0);assert.ok(g.board.every(Boolean));assert.equal(new Set(g.board.map(c=>c.id)).size,49);if(g.level.task==='mouse')assert.ok(g.board.filter(c=>c.type===6).length<=1);}assert.ok(g.finished);}});
+test('complete runs preserve engine invariants across all campaign levels',()=>{for(const l of LEVELS)for(let seed=1;seed<=(l.id<=15?20:2);seed++){const g=new Game(l,seeded(seed));let steps=0;while(!g.finished&&steps++<l.moves+1){const p=g.possible();assert.ok(p,`level ${l.id}`);const old=g.moves;assert.ok(g.move(...p).valid);assert.equal(g.moves,old-1);assert.equal(g.groups().length,0);assert.ok(g.board.every(Boolean));assert.equal(new Set(g.board.map(c=>c.id)).size,49);if(g.level.task==='mouse')assert.ok(g.board.filter(c=>c.type===6).length<=1);}assert.ok(g.finished);}});
 
 test('Lime converts six eligible tiles to springs once, preserving mice, specials, existing springs and moves',()=>{
  const g=blank(LEVELS[2]);g.board[0]=g.cell(6);g.board[1].special='row';g.board[2].type=4;
@@ -48,7 +48,7 @@ test('scratching clears three valid columns at both edges and center, costs no m
  }
 });
 test('all skills and random play preserve invariants across every level',()=>{
- for(const level of LEVELS)for(let seed=1;seed<=10;seed++){const g=new Game(level,seeded(seed));let turns=0;
+ for(const level of LEVELS)for(let seed=1;seed<=(level.id<=15?10:2);seed++){const g=new Game(level,seeded(seed));let turns=0;
   while(!g.finished&&turns++<level.moves+4){if(g.moves<=7)g.skill('purr');if(g.turnsTaken===3)g.skill('queen',24);if(g.turnsTaken>=6)g.skill('zoomies');if(!g.finished&&g.bowCharge===BOW_COST)g.skill('scratch',24);if(g.finished)break;
    assert.ok(g.move(...g.possible()).valid);assert.equal(g.groups().length,0);assert.ok(g.board.every(Boolean));assert.equal(new Set(g.board.map(c=>c.id)).size,49);assert.ok(g.bowCharge>=0&&g.bowCharge<=BOW_COST);
   }assert.ok(g.finished);

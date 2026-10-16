@@ -1,8 +1,8 @@
-const CACHE='mur-mur-v9-clear-goals';
+const CACHE='mur-mur-v10-thousand-levels';
 const FILES=['./','./index.html','./style.css','./app.js','./engine.js','./art.js','./assets/items.svg','./assets/sofa-cozy.png','./photos.js','./gallery.js','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png','./assets/fonts/manrope-500.ttf','./assets/fonts/manrope-700.ttf','./assets/fonts/manrope-600.ttf','./assets/fonts/manrope-400.ttf','./assets/fonts/comfortaa-600.ttf','./assets/fonts/manrope-800.ttf','./assets/fonts/comfortaa-700.ttf','./assets/fonts/comfortaa-500.ttf'];
 FILES.push(...Array.from({length:37},(_,i)=>{const base='./assets/gallery/photo-'+String(i+1).padStart(3,'0');return [base+'.jpg',base+'-thumb.jpg'];}).flat());
 // Query-versioned assets prevent stale HTTP caches from hiding new illustrations/code.
-for(let i=0;i<FILES.length;i++)if(/\.(js|css|svg|png)$/.test(FILES[i]))FILES[i]+='?v=9';
+for(let i=0;i<FILES.length;i++)if(/\.(js|css|svg|png)$/.test(FILES[i]))FILES[i]+='?v=10';
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
  await cache.addAll(FILES.map(url=>new Request(url,{cache:'reload'})));

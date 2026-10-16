@@ -2,7 +2,8 @@
 const {Game,LEVELS}=await import(process.env.CAT_MATCH_ENGINE||'../engine.js');
 function random(seed){return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 const results=[];
-for(const level of LEVELS){let wins=0,offers=0,rescues=0;const seeds=40;for(let seed=1;seed<=seeds;seed++){
+const sample=process.env.CAT_MATCH_LEVELS?new Set(process.env.CAT_MATCH_LEVELS.split(',').map(Number)):null;
+for(const level of LEVELS.filter(l=>!sample||sample.has(l.id))){let wins=0,offers=0,rescues=0;const seeds=Number(process.env.CAT_MATCH_SEEDS||40);for(let seed=1;seed<=seeds;seed++){
  const g=new Game(level,random(seed));
  let steps=0,offered=false;while(!g.finished&&steps++<300){
  if(g.moves<=5&&!g.finished){const mouse=g.board.findIndex(c=>c.type===6);g.skill('purr');if(!g.finished)g.skill('queen',level.task==='mouse'?Math.min(48,mouse+7):24);if(!g.finished)g.skill('zoomies');if(!g.finished)g.skill('scratch',level.task==='mouse'?Math.min(48,mouse+7):24);}

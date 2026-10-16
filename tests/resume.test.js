@@ -4,7 +4,7 @@ import {Game,LEVELS} from '../engine.js';
 function seeded(seed){return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 const json=value=>JSON.parse(JSON.stringify(value));
 test('every settled action restores exactly across all levels, including terminal results and all skills',()=>{
- for(const level of LEVELS)for(let seed=1;seed<=10;seed++){
+ for(const level of LEVELS)for(let seed=1;seed<=(level.id<=15?10:2);seed++){
   const g=new Game(level,seeded(seed));let n=0;
   while(!g.finished&&n++<100){
    if(n===3)g.skill('purr');else if(n===5)g.skill('queen',24);else if(n===8)g.skill('zoomies');else if(g.bowCharge===10&&!g.skillsUsed.has('scratch'))g.skill('scratch',24);else g.move(...g.possible());
@@ -28,7 +28,7 @@ test('saved level goal and starting move budget survive later balance changes',(
 });
 test('invalid or unsupported saved runs are rejected without throwing',()=>{
  const original=new Game(LEVELS[0],seeded(7)).toSave();
- const edits=[s=>s.version=99,s=>s.level.id=0,s=>s.level.id=16,s=>s.level.target=0,s=>s.level.moves=NaN,s=>s.board.pop(),s=>s.board[1]=null,s=>s.board[1].id=s.board[0].id,s=>s.board[0].type=9,s=>s.board[0].special='unknown',s=>s.serial=0,s=>s.moves=-1,s=>s.score=Infinity,s=>s.bowCharge=11,s=>s.skillsUsed=['unknown'],s=>s.skillsUsed=['purr','purr'],s=>s.cords=[-1],s=>s.mouseCount=1,s=>{for(const c of s.board)c.type=1;}];
+ const edits=[s=>s.version=99,s=>s.level.id=0,s=>s.level.id=LEVELS.length+1,s=>s.level.target=0,s=>s.level.moves=NaN,s=>s.board.pop(),s=>s.board[1]=null,s=>s.board[1].id=s.board[0].id,s=>s.board[0].type=9,s=>s.board[0].special='unknown',s=>s.serial=0,s=>s.moves=-1,s=>s.score=Infinity,s=>s.bowCharge=11,s=>s.skillsUsed=['unknown'],s=>s.skillsUsed=['purr','purr'],s=>s.cords=[-1],s=>s.mouseCount=1,s=>{for(const c of s.board)c.type=1;}];
  for(const edit of edits){const s=json(original);edit(s);assert.equal(Game.restore(s),null);}
  for(const s of [null,{},[],0,'bad'])assert.equal(Game.restore(s),null);
  const cords=new Game(LEVELS[1],seeded(4)).toSave();cords.cords.pop();assert.equal(Game.restore(cords),null);
